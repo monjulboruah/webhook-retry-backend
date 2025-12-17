@@ -1,0 +1,69 @@
+// 1. REQUIRED CONFIGURATION BLOCKS
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+// 2. YOUR MODELS WITH CASCADE DELETE ADDED
+
+model User {
+  id        String     @id @default(uuid())
+  email     String     @unique
+  password  String
+  createdAt DateTime   @default(now())
+  endpoints Endpoint[]
+}
+
+model Endpoint {
+  id        String   @id @default(uuid())
+  userId    String
+  // Relation to User with Cascade
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  name      String
+  targetUrl String
+  provider  String
+  secret    String?
+  isActive  Boolean  @default(true)
+  events    WebhookEvent[]
+  rateLimit Int      @default(5)
+  isPaused  Boolean  @default(false)
+  archivedSuccessCount Int @default(0)
+}
+
+model WebhookEvent {
+  id         String   @id @default(uuid())
+  endpointId String
+  // Relation to Endpoint with Cascade
+  endpoint   Endpoint @relation(fields: [endpointId], references: [id], onDelete: Cascade)
+  
+  payload    Json
+  headers    Json
+  receivedAt DateTime @default(now())
+  status     Status   @default(PENDING)
+  attempts   DeliveryAttempt[]
+}
+
+model DeliveryAttempt {
+  id             String       @id @default(uuid())
+  webhookEventId String
+  // Relation to WebhookEvent with Cascade
+  webhookEvent   WebhookEvent @relation(fields: [webhookEventId], references: [id], onDelete: Cascade)
+  
+  responseStatus Int?
+  responseBody   String?
+  attemptedAt    DateTime     @default(now())
+  success        Boolean
+}
+
+enum Status {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+  PAUSED
+}
