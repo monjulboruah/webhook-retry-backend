@@ -1,3 +1,4 @@
+import 'dotenv/config';
 import Fastify from 'fastify';
 import cors from '@fastify/cors';
 import { PrismaClient } from '@prisma/client';
@@ -32,7 +33,7 @@ fastify.register(cors, {
 fastify.register(rawBody, {
   field: 'rawBody', // Attaches the raw buffer to req.rawBody
   global: false,    // Only run for specific routes (performance optimization)
-  encoding: 'utf8', 
+  encoding: 'utf8',
   runFirst: true,
 });
 
@@ -59,7 +60,7 @@ fastify.get('/endpoints', { preHandler: [authenticate] }, async (request, reply)
 fastify.post('/endpoints', { preHandler: [authenticate] }, async (request, reply) => {
   const data = request.body as any;
   const { targetUrl } = data || '';
-  
+
   if (!(await isSafeUrl(targetUrl))) {
     return reply.status(400).send({ error: 'Target URL is not allowed (Private/Local IPs blocked)' });
   }
@@ -230,10 +231,10 @@ fastify.post('/endpoints/:id/toggle-pause', { preHandler: [authenticate] }, asyn
     }
   }
 
-  return { 
-    success: true, 
-    isPaused: newPausedState, 
-    flushedEvents: recoveredCount 
+  return {
+    success: true,
+    isPaused: newPausedState,
+    flushedEvents: recoveredCount
   };
 });
 
@@ -241,7 +242,7 @@ fastify.post('/endpoints/:id/toggle-pause', { preHandler: [authenticate] }, asyn
 // fastify.get('/stats', { preHandler: [authenticate] }, async (request, reply) => {
 //   const userId = request.user.userId;
 //   const now = new Date();
-  
+
 //   // 1. Calculate "Start of Today" (00:00:00)
 //   const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
 
@@ -307,14 +308,14 @@ fastify.post('/endpoints/:id/toggle-pause', { preHandler: [authenticate] }, asyn
 //   const successCount = eventsByStatus.find(s => s.status === 'COMPLETED')?._count.id || 0;
 //   const failCount = eventsByStatus.find(s => s.status === 'FAILED')?._count.id || 0;
 //   const pendingCount = eventsByStatus.find(s => ['PENDING', 'PROCESSING', 'QUEUED'].includes(s.status))?._count.id || 0;
-  
+
 //   // 2. Success Ratio
 //   const totalFinished = successCount + failCount;
 //   const successRatio = totalFinished > 0 ? ((successCount / totalFinished) * 100).toFixed(1) : 0;
 
 //   // 3. Process Time Series (Group by Date)
 //   const daysMap = new Map<string, { date: string, success: number, failed: number }>();
-  
+
 //   // Initialize last 7 days with 0
 //   for (let i = 0; i < 7; i++) {
 //     const d = new Date();
@@ -368,7 +369,7 @@ fastify.post('/endpoints/:id/toggle-pause', { preHandler: [authenticate] }, asyn
 fastify.get('/stats', { preHandler: [authenticate] }, async (request, reply) => {
   const userId = request.user.userId;
   const now = new Date();
-  
+
   // 1. Calculate "Start of Today" (00:00:00)
   const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
 
@@ -392,11 +393,11 @@ fastify.get('/stats', { preHandler: [authenticate] }, async (request, reply) => 
     prisma.webhookEvent.count({ where: { endpoint: { userId } } }),
 
     // B. Events Today (Count)
-    prisma.webhookEvent.count({ 
-      where: { 
+    prisma.webhookEvent.count({
+      where: {
         endpoint: { userId },
         receivedAt: { gte: startOfToday }
-      } 
+      }
     }),
 
     // C. Status Breakdown (For Success Ratio)
@@ -408,7 +409,7 @@ fastify.get('/stats', { preHandler: [authenticate] }, async (request, reply) => 
 
     // D. Time Series (Last 7 Days)
     prisma.webhookEvent.findMany({
-      where: { 
+      where: {
         endpoint: { userId },
         receivedAt: { gte: sevenDaysAgo }
       },
@@ -441,7 +442,7 @@ fastify.get('/stats', { preHandler: [authenticate] }, async (request, reply) => 
   // 2. Calculate Status Counts (Live)
   const liveSuccess = eventsByStatus.find(s => s.status === 'COMPLETED')?._count.id || 0;
   const liveFailed = eventsByStatus.find(s => s.status === 'FAILED')?._count.id || 0;
-  
+
   // 3. 👇 MERGE: Total = Live Events + Archived Events
   const totalAllTime = liveTotalEvents + archivedCount;
 
@@ -450,18 +451,18 @@ fastify.get('/stats', { preHandler: [authenticate] }, async (request, reply) => 
   const totalSuccess = liveSuccess + archivedCount;
   const totalFinished = totalSuccess + liveFailed;
 
-  const successRatio = totalFinished > 0 
-    ? ((totalSuccess / totalFinished) * 100).toFixed(1) 
+  const successRatio = totalFinished > 0
+    ? ((totalSuccess / totalFinished) * 100).toFixed(1)
     : 0;
 
   // 5. Calculate Pending (Active)
   const pendingCount = eventsByStatus.find(s => ['PENDING', 'PROCESSING', 'QUEUED'].includes(s.status))?._count.id || 0;
-  
+
   // 6. Process Time Series (Group by Date)
   // (We don't add archived data here because graphs usually show recent activity, 
   // and archived data is by definition old (>7 days))
   const daysMap = new Map<string, { date: string, success: number, failed: number }>();
-  
+
   for (let i = 0; i < 7; i++) {
     const d = new Date();
     d.setDate(now.getDate() - i);
@@ -513,11 +514,11 @@ fastify.get('/stats', { preHandler: [authenticate] }, async (request, reply) => 
 
 // GET /events - Global Event Search & Filter
 fastify.get('/events', { preHandler: [authenticate] }, async (request, reply) => {
-  const { 
-    page = 1, 
-    limit = 20, 
-    status, 
-    endpointId, 
+  const {
+    page = 1,
+    limit = 20,
+    status,
+    endpointId,
     timeRange // '1h', '24h', '7d'
   } = request.query as any;
 
@@ -540,14 +541,14 @@ fastify.get('/events', { preHandler: [authenticate] }, async (request, reply) =>
   if (timeRange) {
     const now = new Date();
     let past = new Date();
-    
-    switch(timeRange) {
+
+    switch (timeRange) {
       case '1h': past.setHours(now.getHours() - 1); break;
       case '24h': past.setHours(now.getHours() - 24); break;
       case '7d': past.setDate(now.getDate() - 7); break;
       case '30d': past.setDate(now.getDate() - 30); break;
     }
-    
+
     where.receivedAt = { gte: past };
   }
 
@@ -614,9 +615,9 @@ fastify.post('/endpoints/:id/recover', { preHandler: [authenticate] }, async (re
 
   // 2. Find all FAILED events for this endpoint
   const failedEvents = await prisma.webhookEvent.findMany({
-    where: { 
+    where: {
       endpointId: id,
-      status: 'FAILED' 
+      status: 'FAILED'
     },
     select: { id: true } // We only need IDs
   });
@@ -627,9 +628,9 @@ fastify.post('/endpoints/:id/recover', { preHandler: [authenticate] }, async (re
 
   // 3. Update DB Status to PENDING (Batch Update)
   await prisma.webhookEvent.updateMany({
-    where: { 
-      endpointId: id, 
-      status: 'FAILED' 
+    where: {
+      endpointId: id,
+      status: 'FAILED'
     },
     data: { status: 'PENDING' }
   });
@@ -644,10 +645,10 @@ fastify.post('/endpoints/:id/recover', { preHandler: [authenticate] }, async (re
 
   request.log.info(`Recovered ${failedEvents.length} events for endpoint ${id}`);
 
-  return { 
-    success: true, 
-    message: `Queued ${failedEvents.length} events for retry`, 
-    count: failedEvents.length 
+  return {
+    success: true,
+    message: `Queued ${failedEvents.length} events for retry`,
+    count: failedEvents.length
   };
 });
 

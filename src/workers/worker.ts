@@ -1,3 +1,4 @@
+import 'dotenv/config';
 import { Worker } from 'bullmq';
 import { PrismaClient } from '@prisma/client';
 import axios from 'axios';
