@@ -10,7 +10,7 @@ import { createRedisConfig } from '../infrastructure/redis/redis';
 
 // OPTIMIZATION 1: Keep-Alive Agents (Reuses TCP connections)
 const httpAgent = new http.Agent({ keepAlive: true, maxSockets: 100 });
-const httpsAgent = new https.Agent({ keepAlive: true, maxSockets: 100, rejectUnauthorized: false });
+const httpsAgent = new https.Agent({ keepAlive: true, maxSockets: 100, rejectUnauthorized: true });
 
 const connection = new Redis(process.env.REDIS_URL!, createRedisConfig());
 const redisClient = new Redis(process.env.REDIS_URL!, createRedisConfig());
