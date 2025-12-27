@@ -7,7 +7,7 @@ const PORT = 4000;
 // Simulation Config
 const CRASH_RATE = 0.3; // 30% chance to crash (return 500)
 const PROCESS_DELAY = 500; // Takes 500ms to process a "heavy" order
-//https://ideal-barnacle-46qqqqvp9p6c74w-4000.app.github.dev/webhooks/payment
+// https://curly-fiesta-9496r4jrgphpqq5-4000.app.github.dev/webhooks/payment
 fastify.post('/webhooks/payment', async (request, reply) => {
   const body = request.body as any;
   const reqId = body.id;
