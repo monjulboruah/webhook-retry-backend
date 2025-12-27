@@ -74,6 +74,8 @@ const worker = new Worker('webhook-queue', async (job) => {
     });
 
   } catch (error: any) {
+    console.log(`********error**************`)
+    console.log(error)
     const status = error.response ? error.response.status : 500;
 
     // ============================================================
@@ -86,7 +88,7 @@ const worker = new Worker('webhook-queue', async (job) => {
       && status !== 429 // Too Many Requests -> Retry
       && status !== 408 // Timeout -> Retry
       && status !== 404 // Timeout -> Retry
-   
+
 
     if (isFatalError) {
       console.log(`🛑 Non-retriable error (${status}). Failing permanently.`);

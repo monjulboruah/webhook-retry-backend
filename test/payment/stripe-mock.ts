@@ -2,9 +2,10 @@
 import axios from 'axios';
 
 // CONFIGURATION
-const SAAS_URL = 'https://curly-fiesta-9496r4jrgphpqq5-3000.app.github.dev/hooks'; 
+const SAAS_URL = 'http://localhost:3000/hooks'; //'https://curly-fiesta-9496r4jrgphpqq5-3000.app.github.dev/hooks'; 
 // ⚠️ REPLACE THIS ID with a real Endpoint ID from your Dashboard!
-const ENDPOINT_ID = 'b9253eac-8b5b-4a29-b008-39eb5f2c0e52'; 
+const ENDPOINT_ID = '887c5a04-7065-422b-9a0f-bc187ebdf393';
+//http://localhost:3000/hooks/887c5a04-7065-422b-9a0f-bc187ebdf393
 //https://curly-fiesta-9496r4jrgphpqq5-3000.app.github.dev/hooks/b9253eac-8b5b-4a29-b008-39eb5f2c0e52
 
 //https://curly-fiesta-9496r4jrgphpqq5-3000.app.github.dev/hooks/b9253eac-8b5b-4a29-b008-39eb5f2c0e52
@@ -13,7 +14,7 @@ const TOTAL_REQUESTS = 100;
 
 async function runFlashSale() {
   console.log(`🚀 STARTING FLASH SALE: Sending ${TOTAL_REQUESTS} webhooks instantly...`);
-  
+
   const promises = [];
 
   for (let i = 1; i <= TOTAL_REQUESTS; i++) {
