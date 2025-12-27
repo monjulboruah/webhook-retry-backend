@@ -61,9 +61,9 @@ fastify.post('/endpoints', { preHandler: [authenticate] }, async (request, reply
   const data = request.body as any;
   const { targetUrl } = data || '';
 
-  if (!(await isSafeUrl(targetUrl))) {
-    return reply.status(400).send({ error: 'Target URL is not allowed (Private/Local IPs blocked)' });
-  }
+  // if (!(await isSafeUrl(targetUrl))) {
+  //   return reply.status(400).send({ error: 'Target URL is not allowed (Private/Local IPs blocked)' });
+  // }
 
   if (!data.name || !data.targetUrl) {
     return reply.status(400).send({ error: 'Name and Target URL are required' });
