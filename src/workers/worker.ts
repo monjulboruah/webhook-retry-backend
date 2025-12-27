@@ -5,13 +5,14 @@ import { Redis } from 'ioredis';
 import https from 'https';
 import http from 'http';
 import { BatchLogger } from '../infrastructure/logger/BatchLogger'; // <--- Import
+import { createRedisConfig } from '../infrastructure/redis/redis';
 
 // OPTIMIZATION 1: Keep-Alive Agents (Reuses TCP connections)
 const httpAgent = new http.Agent({ keepAlive: true, maxSockets: 100 });
 const httpsAgent = new https.Agent({ keepAlive: true, maxSockets: 100, rejectUnauthorized: false });
 
-const connection = new Redis(process.env.REDIS_URL!, { maxRetriesPerRequest: null });
-const redisClient = new Redis(process.env.REDIS_URL!);
+const connection = new Redis(process.env.REDIS_URL!, createRedisConfig());
+const redisClient = new Redis(process.env.REDIS_URL!, createRedisConfig());
 const prisma = new PrismaClient({ datasourceUrl: process.env.DATABASE_URL });
 
 // OPTIMIZATION 2: Initialize Batch Logger
@@ -73,21 +74,21 @@ const worker = new Worker('webhook-queue', async (job) => {
 
   } catch (error: any) {
     const status = error.response ? error.response.status : 500;
-    
+
     // ============================================================
     // 🧠 EXPONENTIAL RETRY EXTENSION
     // ============================================================
-    
+
     // Check if this is a "Fatal" error (Client Error 4xx)
     // We do NOT want to retry these for 15 days!
-    const isFatalError = (status >= 400 && status < 500) 
-       && status !== 429 // Too Many Requests -> Retry
-       && status !== 408 // Timeout -> Retry
-       && status !== 404; // Nginx Crash (Special Case) -> Retry
+    const isFatalError = (status >= 400 && status < 500)
+      && status !== 429 // Too Many Requests -> Retry
+      && status !== 408 // Timeout -> Retry
+      && status !== 404; // Nginx Crash (Special Case) -> Retry
 
     if (isFatalError) {
       console.log(`🛑 Non-retriable error (${status}). Failing permanently.`);
-      
+
       // Log Failure
       batchLogger.add({
         webhookEventId: event.id,
@@ -98,9 +99,9 @@ const worker = new Worker('webhook-queue', async (job) => {
       });
 
       // Update DB
-      await prisma.webhookEvent.update({ 
-        where: { id: eventId }, 
-        data: { status: 'FAILED' } 
+      await prisma.webhookEvent.update({
+        where: { id: eventId },
+        data: { status: 'FAILED' }
       });
       return; // Stop BullMQ retries
     }
@@ -114,7 +115,7 @@ const worker = new Worker('webhook-queue', async (job) => {
     const nextDelayMs = 5000 * Math.pow(2, job.attemptsMade);
     const nextRetryTime = new Date(Date.now() + nextDelayMs);
 
-    console.log(`⚠️ Attempt ${job.attemptsMade + 1} failed. Next retry in ${nextDelayMs/1000}s (@ ${nextRetryTime.toLocaleTimeString()})`);
+    console.log(`⚠️ Attempt ${job.attemptsMade + 1} failed. Next retry in ${nextDelayMs / 1000}s (@ ${nextRetryTime.toLocaleTimeString()})`);
 
     // Log the attempt
     batchLogger.add({
@@ -126,11 +127,11 @@ const worker = new Worker('webhook-queue', async (job) => {
     });
 
     // Throwing error triggers BullMQ's exponential backoff configured in QueueService
-    throw error; 
+    throw error;
   }
 }, {
   connection,
-  concurrency: 50 // <--- OPTIMIZATION 4: Process 50 jobs at once
+  concurrency: 20 // <--- OPTIMIZATION 4: Process 20 jobs at once (Safe for 512MB Free Tier)
 });
 
 // 👇 ADD THIS BLOCK TO HANDLE FINAL FAILURES
