@@ -47,6 +47,8 @@ const worker = new Worker('webhook-queue', async (job) => {
   const startTime = Date.now();
 
   try {
+    console.log(`********endpoint*************`)
+    console.log(event.endpoint.targetUrl)
     const response = await axios.post(event.endpoint.targetUrl, event.payload, {
       headers: {
         'Content-Type': 'application/json',
