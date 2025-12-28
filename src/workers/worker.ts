@@ -47,13 +47,26 @@ const worker = new Worker('webhook-queue', async (job) => {
   const startTime = Date.now();
 
   try {
-    console.log(`********endpoint*************`)
-    console.log(event.endpoint.targetUrl)
+    console.log('--- DEBUGGING REQUEST ---');
+    console.log('1. Target URL:', event.endpoint.targetUrl); // Check for invisible characters or spaces
+    console.log('2. Request Method: POST');
+    console.log('3. Headers:', JSON.stringify({
+      'Content-Type': 'application/json',
+      ...(event.headers as Record<string, any> || {})
+    }, null, 2));
+
+    // Check if URL is Localhost (Fatal in Prod)
+    if (event.endpoint.targetUrl.includes('localhost') || event.endpoint.targetUrl.includes('127.0.0.1')) {
+      console.error("🚨 FATAL: You are trying to hit localhost from inside a Render container. This will never work.");
+    }
     const response = await axios.post(event.endpoint.targetUrl, event.payload, {
       headers: {
         'Content-Type': 'application/json',
+        'User-Agent': 'Mozilla / 5.0(Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari / 537.36', // <--- Add this
+        'Accept-Encoding': 'gzip, deflate, br', // Explicitly state what you can handle
         'X-Webhook-Buffer-ID': event.id,
-        ...(event.headers as Record<string, any> || {})
+        ...(event.headers as Record<string, any> || {}),
+        maxRedirects: 0, // 🛑 Stop Axios from following redirects automatically
       },
       timeout: 5000,
     });
