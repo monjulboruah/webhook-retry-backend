@@ -85,7 +85,6 @@ const worker = new Worker('webhook-queue', async (job) => {
     const isFatalError = (status >= 400 && status < 500)
       && status !== 429 // Too Many Requests -> Retry
       && status !== 408 // Timeout -> Retry
-      && status !== 404 // Timeout -> Retry
 
 
     if (isFatalError) {
