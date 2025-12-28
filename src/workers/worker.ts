@@ -54,8 +54,6 @@ const worker = new Worker('webhook-queue', async (job) => {
         ...(event.headers as Record<string, any> || {})
       },
       timeout: 5000,
-      httpAgent,   // <--- Use Optimized Agents
-      httpsAgent
     });
 
     // OPTIMIZATION 3: Batch Log Success
