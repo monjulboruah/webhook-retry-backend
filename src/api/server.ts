@@ -148,6 +148,11 @@ fastify.post('/events/:id/replay', { preHandler: [authenticate] }, async (reques
 //  PUBLIC ROUTES (Webhook Ingestion)
 // =========================================================
 
+// GET /ping - Health Check Endpoint
+fastify.get('/ping', async (request, reply) => {
+  return 'pong';
+});
+
 // POST /hooks/:endpointId - The "Magic URL"
 fastify.post('/hooks/:endpointId', { config: { rawBody: true } }, async (request, reply) => {
   const { endpointId } = request.params as any;
