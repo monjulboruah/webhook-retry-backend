@@ -31,30 +31,30 @@ const worker = new Worker('webhook-queue', async (job) => {
 
   if (!event) return;
 
-  // --- Traffic Smoothing Logic (Existing) ---
+  // --- Traffic Smoothing Logic (Proportional Delay) ---
   const limit = event.endpoint.rateLimit || 5;
   const now = Math.floor(Date.now() / 1000);
   const key = `rate:${event.endpoint.id}:${now}`;
   const currentCount = await redisClient.incr(key);
-  if (currentCount === 1) await redisClient.expire(key, 5);
+  if (currentCount === 1) await redisClient.expire(key, 60);
 
-  if (currentCount > limit) {
-    // Simple pause for traffic smoothing
-    await new Promise(resolve => setTimeout(resolve, 1000));
+  // Calculate delay based on how many "batches" deep we are
+  // e.g. Limit 5.
+  // Count 1-5: Window 0 -> Delay 0ms
+  // Count 6-10: Window 1 -> Delay 1000ms
+  // Count 11-15: Window 2 -> Delay 2000ms
+  const windowIndex = Math.floor((currentCount - 1) / limit);
+
+  if (windowIndex > 0) {
+    const delayMs = windowIndex * 1000;
+    console.log(`🚦 Smoothing: Delaying request ${event.id} by ${delayMs}ms (Window ${windowIndex})`);
+    await new Promise(resolve => setTimeout(resolve, delayMs));
   }
   // ------------------------------------------
 
   const startTime = Date.now();
 
   try {
-    console.log('--- DEBUGGING REQUEST ---');
-    console.log('1. Target URL:', event.endpoint.targetUrl); // Check for invisible characters or spaces
-    console.log('2. Request Method: POST');
-    console.log('3. Headers:', JSON.stringify({
-      'Content-Type': 'application/json',
-      ...(event.headers as Record<string, any> || {})
-    }, null, 2));
-
     // Check if URL is Localhost (Fatal in Prod)
     if (event.endpoint.targetUrl.includes('localhost') || event.endpoint.targetUrl.includes('127.0.0.1')) {
       console.error("🚨 FATAL: You are trying to hit localhost from inside a Render container. This will never work.");
@@ -94,8 +94,6 @@ const worker = new Worker('webhook-queue', async (job) => {
     });
 
   } catch (error: any) {
-    console.log(`********error**************`)
-    console.log(error)
     const status = error.response ? error.response.status : 500;
 
     // ============================================================
